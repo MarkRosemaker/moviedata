@@ -95,6 +95,7 @@ tools:
 	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 	go install golang.org/x/vuln/cmd/govulncheck@latest
 	go install golang.org/x/pkgsite/cmd/pkgsite@latest
+	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 	go install github.com/MarkRosemaker/devtool@latest
 
 # A fragment adds its own with CLEAN_FILES += dist.

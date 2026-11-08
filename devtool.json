@@ -5,6 +5,15 @@
 	"tools": {
 		"golangci-lint": "v2.15.0",
 		"govulncheck": "v1.9.0",
-		"pkgsite": "v0.6.0"
+		"pkgsite": "v0.6.0",
+		"sqlc": "v1.31.1"
+	},
+	"resources": {
+		"databases": [
+			{
+				"name": "data",
+				"type": "sqlite"
+			}
+		]
 	}
 }

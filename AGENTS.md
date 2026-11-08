@@ -73,6 +73,39 @@ Edit the directory, never the file:
 generated. Your own rules go below that block, where they win — in a
 `.gitignore` the last matching pattern decides.
 
+## Databases
+
+`devtool.json` declares this repository's databases, each a package
+under `databases/`: `databases/data`.
+
+Two parts of each are written by hand:
+
+- **The schema, as migrations:** `migrations/<version>_<title>.up.sql`,
+  numbered on from the last. The first is the initial state. Never edit a
+  migration that has been merged, since a database already past it will not
+  see the change. Add the next one instead.
+- **The queries:** `queries/*.sql`, in sqlc's syntax (`-- name: Foo :one`).
+  Keep them ASCII, comments included. sqlc's SQLite parser counts positions
+  in characters and cuts the file in bytes, so one em dash shifts the text of
+  every query after it. The code compiles, and the queries fail when run.
+
+Everything else in the package is generated, and `make generate` rewrites
+it: `sqlc.yaml`, `generate.go`, `migrate.go` and `open.go` by devtool, and
+`db.go`, `models.go` and `*.sql.go` by sqlc. Code of your own goes in a
+file of your own beside them.
+
+`Open(ctx, path)` creates the database where it does not exist,
+migrates it (an encrypted one takes its key as well: `Open(ctx, path, key)`)
+and returns a `DB`: every query as a method, `WithTx` for a transaction,
+and `Close`. `Path()` is where the database lives on this machine, or
+`Path(world)` for one with a copy per world, declared `"per": "world"`. A test
+opens a real one of its own, rather than mocking it:
+`Open(ctx, filepath.Join(t.TempDir(), "<name>.db"))`.
+
+To add a database, add `{"name": "…", "type": "sqlite"}` (or `"postgres"`)
+to `resources.databases` in `devtool.json`, write
+`databases/<name>/migrations/001_initial.up.sql`, and run `make generate`.
+
 ## Keeping the documents true
 
 - Say what is, concisely. Not what was or how it came to be: that is git's.
