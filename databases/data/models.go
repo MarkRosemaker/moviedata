@@ -5,20 +5,49 @@
 package data
 
 import (
-	"database/sql"
 	"time"
-
-	"cloud.google.com/go/civil"
 )
 
-type Note struct {
-	ID         int64
-	Title      string
-	Body       sql.NullString
-	Pinned     bool
-	Score      sql.NullFloat64
-	Due        *civil.Date
-	RemindAt   sql.NullTime
-	Attachment []byte
-	CreatedAt  time.Time
+type Movie struct {
+	ID        int64
+	Data      []byte
+	FetchedAt time.Time
+}
+
+type MovieSearch struct {
+	ID        int64
+	Query     string
+	Year      int64
+	FetchedAt time.Time
+}
+
+type MovieSearchResult struct {
+	SearchID int64
+	Rank     int64
+	MovieID  int64
+}
+
+type Season struct {
+	ShowID       int64
+	SeasonNumber int64
+	Data         []byte
+	FetchedAt    time.Time
+}
+
+type Show struct {
+	ID        int64
+	Data      []byte
+	FetchedAt time.Time
+}
+
+type ShowSearch struct {
+	ID        int64
+	Query     string
+	FetchedAt time.Time
+}
+
+type ShowSearchResult struct {
+	SearchID int64
+	Rank     int64
+	ShowID   int64
 }
