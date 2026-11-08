@@ -2,13 +2,14 @@
 
 A cache in front of [The Movie Database](https://www.themoviedb.org), through
 its Go client [go-api-libs/themoviedb](https://github.com/go-api-libs/themoviedb).
-Each film, show and season is fetched once and kept in a SQLite database, each
+Each film, show, season and episode is fetched once and the fields of it that
+are read are kept in a SQLite database, each
 search is kept as its query and the ids it found, and each poster and still is
 downloaded once into the `images` directory beside the database. After that,
 the answer comes from there, offline and without a token.
 
-A program uses this package, never `themoviedb` directly: the types it needs
-are aliased here.
+A program uses this package, never `themoviedb` directly: `Movie`, `Show` and
+`Episode` are this package's own, and the client's options are aliased here.
 
 ```go
 path, _ := moviedata.Path() // ~/.moviedata/data.db

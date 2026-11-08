@@ -1,13 +1,13 @@
 // Package moviedata looks films and shows up at The Movie Database and keeps
-// what it finds: their details and searches in a SQLite database, their images
-// as files beside it. What is once fetched is answered from there ever after,
-// so a program asks this package, never The Movie Database's client directly.
+// what it finds: the fields of them that are read, and searches, in a SQLite
+// database, their images as files beside it. What is once fetched is answered
+// from there ever after, so a program asks this package, never The Movie
+// Database's client directly.
 package moviedata
 
 import (
 	"context"
 	"database/sql"
-	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -15,21 +15,14 @@ import (
 	"path/filepath"
 	"strings"
 
+	"cloud.google.com/go/civil"
 	"github.com/MarkRosemaker/moviedata/databases/data"
 	"github.com/go-api-libs/api"
 	"github.com/go-api-libs/themoviedb/pkg/themoviedb"
 )
 
-// The Movie Database's types, so a program needs no import of its client.
-type (
-	Movie        = themoviedb.Movie
-	MovieID      = themoviedb.MovieID
-	Show         = themoviedb.Show
-	ShowID       = themoviedb.ShowID
-	Season       = themoviedb.SeasonDetails
-	Episode      = themoviedb.ShowEpisodeDetails
-	ClientOption = themoviedb.ClientOption
-)
+// ClientOption configures the client that fetches what is not kept yet.
+type ClientOption = themoviedb.ClientOption
 
 // Options for the client that fetches what is not kept yet.
 var (
@@ -84,17 +77,10 @@ func (c *Client) client() (*themoviedb.Client, error) {
 	return c.cli, nil
 }
 
-// kept is what read finds and decodes, else what fetch answers, which write
-// then keeps.
-func kept[T any](read func() ([]byte, error), fetch func() (T, error), write func([]byte) error) (T, error) {
-	var v T
-
-	b, err := read()
-	if err == nil {
-		return v, json.Unmarshal(b, &v)
-	}
-
-	if !errors.Is(err, sql.ErrNoRows) {
+// kept is what read finds, else what fetch answers, which write then keeps.
+func kept[T any](read, fetch func() (T, error), write func(T) error) (T, error) {
+	v, err := read()
+	if err == nil || !errors.Is(err, sql.ErrNoRows) {
 		return v, err
 	}
 
@@ -102,22 +88,7 @@ func kept[T any](read func() ([]byte, error), fetch func() (T, error), write fun
 		return v, err
 	}
 
-	if b, err = json.Marshal(v); err != nil {
-		return v, err
-	}
-
-	return v, write(b)
-}
-
-func decodeAll[T any](rows [][]byte) ([]T, error) {
-	out := make([]T, len(rows))
-	for i, b := range rows {
-		if err := json.Unmarshal(b, &out[i]); err != nil {
-			return nil, err
-		}
-	}
-
-	return out, nil
+	return v, write(v)
 }
 
 // normalize is the query a search is kept under: two that differ in case or
@@ -132,4 +103,21 @@ func notFound(err error) error {
 	}
 
 	return err
+}
+
+// nullDate is d, or NULL where it is not a date: The Movie Database leaves dates it does not know empty.
+func nullDate(d civil.Date) *civil.Date {
+	if !d.IsValid() {
+		return nil
+	}
+
+	return &d
+}
+
+func dateOf(d *civil.Date) civil.Date {
+	if d == nil {
+		return civil.Date{}
+	}
+
+	return *d
 }

@@ -1,9 +1,22 @@
 -- name: GetMovie :one
-SELECT data FROM movies WHERE id = ?;
+SELECT * FROM movies WHERE id = ?;
 
 -- name: PutMovie :exec
-INSERT INTO movies (id, data) VALUES (?, ?)
-ON CONFLICT (id) DO UPDATE SET data = excluded.data, fetched_at = CURRENT_TIMESTAMP;
+INSERT INTO movies (
+    id, title, original_title, original_language, overview, release_date,
+    popularity, vote_average, vote_count, poster_path
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT (id) DO UPDATE SET
+    title = excluded.title,
+    original_title = excluded.original_title,
+    original_language = excluded.original_language,
+    overview = excluded.overview,
+    release_date = excluded.release_date,
+    popularity = excluded.popularity,
+    vote_average = excluded.vote_average,
+    vote_count = excluded.vote_count,
+    poster_path = excluded.poster_path,
+    fetched_at = CURRENT_TIMESTAMP;
 
 -- name: GetMovieSearch :one
 SELECT id FROM movie_searches WHERE query = ? AND year = ?;
@@ -20,7 +33,7 @@ DELETE FROM movie_search_results WHERE search_id = ?;
 INSERT INTO movie_search_results (search_id, rank, movie_id) VALUES (?, ?, ?);
 
 -- name: ListMovieSearchResults :many
-SELECT m.data FROM movie_search_results r
-JOIN movies m ON m.id = r.movie_id
-WHERE r.search_id = ?
-ORDER BY r.rank;
+SELECT sqlc.embed(movies) FROM movie_search_results
+JOIN movies ON movies.id = movie_search_results.movie_id
+WHERE movie_search_results.search_id = ?
+ORDER BY movie_search_results.rank;

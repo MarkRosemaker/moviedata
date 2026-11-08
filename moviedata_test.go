@@ -43,6 +43,9 @@ func (f *fake) RoundTrip(r *http.Request) (*http.Response, error) {
 		body = `{"id":603,"title":"The Matrix","original_title":"The Matrix","overview":"","popularity":1,` +
 			`"release_date":"1999-03-31","adult":false,"original_language":"en","video":false,"vote_average":8,"vote_count":1,` +
 			`"softcore":false,"genres":[{"id":28,"name":"Action"}]}`
+	case strings.HasSuffix(p, "/movie/604"):
+		body = `{"id":604,"title":"Untitled","original_title":"Untitled","overview":"","popularity":0,` +
+			`"adult":false,"original_language":"en","video":false,"vote_average":0,"vote_count":0,"softcore":false}`
 	case strings.HasSuffix(p, "/search/tv"):
 		f.searches.Add(1)
 
@@ -115,13 +118,19 @@ func TestMovies(t *testing.T) {
 
 	for range 2 {
 		m, err := c.Movie(ctx, 603)
-		if err != nil || m.Title != "The Matrix" || len(m.GenreIDs) != 1 || m.GenreIDs[0] != 28 {
+		if err != nil || m.Title != "The Matrix" || m.ReleaseDate.Year != 1999 {
 			t.Fatalf("got %+v, %v", m, err)
 		}
 	}
 
 	if n := f.movies.Load(); n != 1 {
 		t.Errorf("fetched the film %d times, want once", n)
+	}
+
+	for range 2 {
+		if m, err := c.Movie(ctx, 604); err != nil || m.ReleaseDate.IsValid() {
+			t.Errorf("a film without a release date: %+v, %v", m, err)
+		}
 	}
 
 	if _, err := c.Movie(ctx, 1); !errors.Is(err, fs.ErrNotExist) {
@@ -191,7 +200,7 @@ func TestShows(t *testing.T) {
 
 	for range 2 {
 		ep, err := c.Episode(ctx, 65494, 1, 2)
-		if err != nil || ep.Name != "Hyde Park Corner" {
+		if err != nil || ep.Name != "Hyde Park Corner" || ep.Runtime != 58 || ep.AirDate.Year != 2016 {
 			t.Fatalf("episode %+v, %v", ep, err)
 		}
 	}

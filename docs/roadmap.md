@@ -2,8 +2,8 @@
 
 ## Migrate private-file-vault
 
-Replace its `internal/tmdb` with this package, and its imports of
-`themoviedb` with the aliases here. Its kept JSON in
+Replace its `internal/tmdb` with this package, and its uses of
+`themoviedb`'s types with `moviedata.Movie`, `Show` and `Episode`. Its kept JSON in
 `~/.private-file-vault/tmdb` is a cache and can be dropped.
 
 ## Refreshing

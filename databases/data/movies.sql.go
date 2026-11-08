@@ -7,6 +7,8 @@ package data
 
 import (
 	"context"
+
+	"cloud.google.com/go/civil"
 )
 
 const addMovieSearchResult = `-- name: AddMovieSearchResult :exec
@@ -34,14 +36,26 @@ func (q *Queries) ClearMovieSearchResults(ctx context.Context, searchID int64) e
 }
 
 const getMovie = `-- name: GetMovie :one
-SELECT data FROM movies WHERE id = ?
+SELECT id, title, original_title, original_language, overview, release_date, popularity, vote_average, vote_count, poster_path, fetched_at FROM movies WHERE id = ?
 `
 
-func (q *Queries) GetMovie(ctx context.Context, id int64) ([]byte, error) {
+func (q *Queries) GetMovie(ctx context.Context, id int64) (Movie, error) {
 	row := q.db.QueryRowContext(ctx, getMovie, id)
-	var data []byte
-	err := row.Scan(&data)
-	return data, err
+	var i Movie
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.OriginalTitle,
+		&i.OriginalLanguage,
+		&i.Overview,
+		&i.ReleaseDate,
+		&i.Popularity,
+		&i.VoteAverage,
+		&i.VoteCount,
+		&i.PosterPath,
+		&i.FetchedAt,
+	)
+	return i, err
 }
 
 const getMovieSearch = `-- name: GetMovieSearch :one
@@ -61,25 +75,41 @@ func (q *Queries) GetMovieSearch(ctx context.Context, arg GetMovieSearchParams) 
 }
 
 const listMovieSearchResults = `-- name: ListMovieSearchResults :many
-SELECT m.data FROM movie_search_results r
-JOIN movies m ON m.id = r.movie_id
-WHERE r.search_id = ?
-ORDER BY r.rank
+SELECT movies.id, movies.title, movies.original_title, movies.original_language, movies.overview, movies.release_date, movies.popularity, movies.vote_average, movies.vote_count, movies.poster_path, movies.fetched_at FROM movie_search_results
+JOIN movies ON movies.id = movie_search_results.movie_id
+WHERE movie_search_results.search_id = ?
+ORDER BY movie_search_results.rank
 `
 
-func (q *Queries) ListMovieSearchResults(ctx context.Context, searchID int64) ([][]byte, error) {
+type ListMovieSearchResultsRow struct {
+	Movie Movie
+}
+
+func (q *Queries) ListMovieSearchResults(ctx context.Context, searchID int64) ([]ListMovieSearchResultsRow, error) {
 	rows, err := q.db.QueryContext(ctx, listMovieSearchResults, searchID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items [][]byte
+	var items []ListMovieSearchResultsRow
 	for rows.Next() {
-		var data []byte
-		if err := rows.Scan(&data); err != nil {
+		var i ListMovieSearchResultsRow
+		if err := rows.Scan(
+			&i.Movie.ID,
+			&i.Movie.Title,
+			&i.Movie.OriginalTitle,
+			&i.Movie.OriginalLanguage,
+			&i.Movie.Overview,
+			&i.Movie.ReleaseDate,
+			&i.Movie.Popularity,
+			&i.Movie.VoteAverage,
+			&i.Movie.VoteCount,
+			&i.Movie.PosterPath,
+			&i.Movie.FetchedAt,
+		); err != nil {
 			return nil, err
 		}
-		items = append(items, data)
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -91,17 +121,49 @@ func (q *Queries) ListMovieSearchResults(ctx context.Context, searchID int64) ([
 }
 
 const putMovie = `-- name: PutMovie :exec
-INSERT INTO movies (id, data) VALUES (?, ?)
-ON CONFLICT (id) DO UPDATE SET data = excluded.data, fetched_at = CURRENT_TIMESTAMP
+INSERT INTO movies (
+    id, title, original_title, original_language, overview, release_date,
+    popularity, vote_average, vote_count, poster_path
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT (id) DO UPDATE SET
+    title = excluded.title,
+    original_title = excluded.original_title,
+    original_language = excluded.original_language,
+    overview = excluded.overview,
+    release_date = excluded.release_date,
+    popularity = excluded.popularity,
+    vote_average = excluded.vote_average,
+    vote_count = excluded.vote_count,
+    poster_path = excluded.poster_path,
+    fetched_at = CURRENT_TIMESTAMP
 `
 
 type PutMovieParams struct {
-	ID   int64
-	Data []byte
+	ID               int64
+	Title            string
+	OriginalTitle    string
+	OriginalLanguage string
+	Overview         string
+	ReleaseDate      *civil.Date
+	Popularity       float64
+	VoteAverage      float64
+	VoteCount        int64
+	PosterPath       string
 }
 
 func (q *Queries) PutMovie(ctx context.Context, arg PutMovieParams) error {
-	_, err := q.db.ExecContext(ctx, putMovie, arg.ID, arg.Data)
+	_, err := q.db.ExecContext(ctx, putMovie,
+		arg.ID,
+		arg.Title,
+		arg.OriginalTitle,
+		arg.OriginalLanguage,
+		arg.Overview,
+		arg.ReleaseDate,
+		arg.Popularity,
+		arg.VoteAverage,
+		arg.VoteCount,
+		arg.PosterPath,
+	)
 	return err
 }
 

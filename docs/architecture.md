@@ -7,16 +7,21 @@ The Movie Database's client, keeping the answer before it returns it.
 
 | Call | Kept as | Fetched with |
 |---|---|---|
-| `Movie(id)` | `movies` row | `GetMovie`, reduced to `themoviedb.Movie` |
+| `Movie(id)` | `movies` row | `GetMovie` |
 | `Search(q)`, `Find(title, year)` | `movie_searches` row and its `movie_search_results`, each film in `movies` | `SearchMovies`, page 1 |
-| `Show(id)` | `shows` row | `GetShow`, reduced to `themoviedb.Show` |
+| `Show(id)` | `shows` row | `GetShow` |
 | `SearchShows(q)`, `FindShow(name)` | `show_searches` row and its `show_search_results`, each show in `shows` | `SearchShows`, page 1 |
-| `Season(id, n)`, `Episode(id, n, e)` | `seasons` row, episodes inside it | `GetShowSeason` |
+| `Episode(id, n, e)` | `seasons` row and its `episodes` | `GetShowSeason` |
 | `Poster`, `ShowPoster`, `Still` | file `images/<name>` beside the database | `GetImage` |
 
-- A row holds the client's type as JSON (`encoding/json/v2`), keyed by what
-  identifies it at the API. The schema does not mirror the API's fields, so a
-  change to them needs no migration.
+- A row holds, as columns of their own, only the fields a consumer reads,
+  keyed by what identifies it at the API. `Movie`, `Show` and `Episode` are
+  this package's types with exactly those fields. A field a consumer comes to
+  need is a new column, in a new migration, and a refetch of what lacks it.
+- A date The Movie Database leaves empty is NULL, and the zero `civil.Date`
+  in Go.
+- A season is kept with all its episodes, in one transaction, so an episode
+  missing from a kept season does not exist.
 - A search is keyed by its query trimmed and lower-cased (and, for films, the
   year, 0 for any). A search that found nothing is kept too.
 - A search's results are written in one transaction with the films or shows
@@ -28,8 +33,8 @@ The Movie Database's client, keeping the answer before it returns it.
 - A 404 from The Movie Database is wrapped as `fs.ErrNotExist`, as is an
   episode a season lacks or a poster a film lacks.
 
-`Find`, `FindShow`, `Episode`, `ShowPoster` and the `Movie`/`Show` reductions
-are the calls `private-file-vault` needs, moved here from its `internal/tmdb`.
+The calls and fields are those `private-file-vault` uses, moved here from its
+`internal/tmdb`.
 
 ## Package `databases/data`
 

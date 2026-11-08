@@ -7,6 +7,8 @@ package data
 
 import (
 	"context"
+
+	"cloud.google.com/go/civil"
 )
 
 const addShowSearchResult = `-- name: AddShowSearchResult :exec
@@ -33,31 +35,27 @@ func (q *Queries) ClearShowSearchResults(ctx context.Context, searchID int64) er
 	return err
 }
 
-const getSeason = `-- name: GetSeason :one
-SELECT data FROM seasons WHERE show_id = ? AND season_number = ?
-`
-
-type GetSeasonParams struct {
-	ShowID       int64
-	SeasonNumber int64
-}
-
-func (q *Queries) GetSeason(ctx context.Context, arg GetSeasonParams) ([]byte, error) {
-	row := q.db.QueryRowContext(ctx, getSeason, arg.ShowID, arg.SeasonNumber)
-	var data []byte
-	err := row.Scan(&data)
-	return data, err
-}
-
 const getShow = `-- name: GetShow :one
-SELECT data FROM shows WHERE id = ?
+SELECT id, name, original_name, original_language, overview, first_air_date, popularity, vote_average, vote_count, poster_path, fetched_at FROM shows WHERE id = ?
 `
 
-func (q *Queries) GetShow(ctx context.Context, id int64) ([]byte, error) {
+func (q *Queries) GetShow(ctx context.Context, id int64) (Show, error) {
 	row := q.db.QueryRowContext(ctx, getShow, id)
-	var data []byte
-	err := row.Scan(&data)
-	return data, err
+	var i Show
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.OriginalName,
+		&i.OriginalLanguage,
+		&i.Overview,
+		&i.FirstAirDate,
+		&i.Popularity,
+		&i.VoteAverage,
+		&i.VoteCount,
+		&i.PosterPath,
+		&i.FetchedAt,
+	)
+	return i, err
 }
 
 const getShowSearch = `-- name: GetShowSearch :one
@@ -72,25 +70,41 @@ func (q *Queries) GetShowSearch(ctx context.Context, query string) (int64, error
 }
 
 const listShowSearchResults = `-- name: ListShowSearchResults :many
-SELECT s.data FROM show_search_results r
-JOIN shows s ON s.id = r.show_id
-WHERE r.search_id = ?
-ORDER BY r.rank
+SELECT shows.id, shows.name, shows.original_name, shows.original_language, shows.overview, shows.first_air_date, shows.popularity, shows.vote_average, shows.vote_count, shows.poster_path, shows.fetched_at FROM show_search_results
+JOIN shows ON shows.id = show_search_results.show_id
+WHERE show_search_results.search_id = ?
+ORDER BY show_search_results.rank
 `
 
-func (q *Queries) ListShowSearchResults(ctx context.Context, searchID int64) ([][]byte, error) {
+type ListShowSearchResultsRow struct {
+	Show Show
+}
+
+func (q *Queries) ListShowSearchResults(ctx context.Context, searchID int64) ([]ListShowSearchResultsRow, error) {
 	rows, err := q.db.QueryContext(ctx, listShowSearchResults, searchID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items [][]byte
+	var items []ListShowSearchResultsRow
 	for rows.Next() {
-		var data []byte
-		if err := rows.Scan(&data); err != nil {
+		var i ListShowSearchResultsRow
+		if err := rows.Scan(
+			&i.Show.ID,
+			&i.Show.Name,
+			&i.Show.OriginalName,
+			&i.Show.OriginalLanguage,
+			&i.Show.Overview,
+			&i.Show.FirstAirDate,
+			&i.Show.Popularity,
+			&i.Show.VoteAverage,
+			&i.Show.VoteCount,
+			&i.Show.PosterPath,
+			&i.Show.FetchedAt,
+		); err != nil {
 			return nil, err
 		}
-		items = append(items, data)
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -101,34 +115,50 @@ func (q *Queries) ListShowSearchResults(ctx context.Context, searchID int64) ([]
 	return items, nil
 }
 
-const putSeason = `-- name: PutSeason :exec
-INSERT INTO seasons (show_id, season_number, data) VALUES (?, ?, ?)
-ON CONFLICT (show_id, season_number) DO UPDATE SET data = excluded.data, fetched_at = CURRENT_TIMESTAMP
-`
-
-type PutSeasonParams struct {
-	ShowID       int64
-	SeasonNumber int64
-	Data         []byte
-}
-
-func (q *Queries) PutSeason(ctx context.Context, arg PutSeasonParams) error {
-	_, err := q.db.ExecContext(ctx, putSeason, arg.ShowID, arg.SeasonNumber, arg.Data)
-	return err
-}
-
 const putShow = `-- name: PutShow :exec
-INSERT INTO shows (id, data) VALUES (?, ?)
-ON CONFLICT (id) DO UPDATE SET data = excluded.data, fetched_at = CURRENT_TIMESTAMP
+INSERT INTO shows (
+    id, name, original_name, original_language, overview, first_air_date,
+    popularity, vote_average, vote_count, poster_path
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT (id) DO UPDATE SET
+    name = excluded.name,
+    original_name = excluded.original_name,
+    original_language = excluded.original_language,
+    overview = excluded.overview,
+    first_air_date = excluded.first_air_date,
+    popularity = excluded.popularity,
+    vote_average = excluded.vote_average,
+    vote_count = excluded.vote_count,
+    poster_path = excluded.poster_path,
+    fetched_at = CURRENT_TIMESTAMP
 `
 
 type PutShowParams struct {
-	ID   int64
-	Data []byte
+	ID               int64
+	Name             string
+	OriginalName     string
+	OriginalLanguage string
+	Overview         string
+	FirstAirDate     *civil.Date
+	Popularity       float64
+	VoteAverage      float64
+	VoteCount        int64
+	PosterPath       string
 }
 
 func (q *Queries) PutShow(ctx context.Context, arg PutShowParams) error {
-	_, err := q.db.ExecContext(ctx, putShow, arg.ID, arg.Data)
+	_, err := q.db.ExecContext(ctx, putShow,
+		arg.ID,
+		arg.Name,
+		arg.OriginalName,
+		arg.OriginalLanguage,
+		arg.Overview,
+		arg.FirstAirDate,
+		arg.Popularity,
+		arg.VoteAverage,
+		arg.VoteCount,
+		arg.PosterPath,
+	)
 	return err
 }
 

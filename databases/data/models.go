@@ -6,12 +6,34 @@ package data
 
 import (
 	"time"
+
+	"cloud.google.com/go/civil"
 )
 
+type Episode struct {
+	ShowID        int64
+	SeasonNumber  int64
+	EpisodeNumber int64
+	Name          string
+	Overview      string
+	AirDate       *civil.Date
+	Runtime       int64
+	VoteAverage   float64
+	StillPath     string
+}
+
 type Movie struct {
-	ID        int64
-	Data      []byte
-	FetchedAt time.Time
+	ID               int64
+	Title            string
+	OriginalTitle    string
+	OriginalLanguage string
+	Overview         string
+	ReleaseDate      *civil.Date
+	Popularity       float64
+	VoteAverage      float64
+	VoteCount        int64
+	PosterPath       string
+	FetchedAt        time.Time
 }
 
 type MovieSearch struct {
@@ -30,14 +52,22 @@ type MovieSearchResult struct {
 type Season struct {
 	ShowID       int64
 	SeasonNumber int64
-	Data         []byte
+	PosterPath   string
 	FetchedAt    time.Time
 }
 
 type Show struct {
-	ID        int64
-	Data      []byte
-	FetchedAt time.Time
+	ID               int64
+	Name             string
+	OriginalName     string
+	OriginalLanguage string
+	Overview         string
+	FirstAirDate     *civil.Date
+	Popularity       float64
+	VoteAverage      float64
+	VoteCount        int64
+	PosterPath       string
+	FetchedAt        time.Time
 }
 
 type ShowSearch struct {

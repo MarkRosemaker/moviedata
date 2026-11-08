@@ -9,10 +9,10 @@ of a `go-api-libs` client.
   in `devtool.json`. `Path()` gives `~/.<repo>/<name>.db`; files the API
   serves (images) go in a directory beside it, so one directory is the whole
   cache.
-- The root package is the only thing consumers import. Alias the client's
-  types (`type Movie = themoviedb.Movie`) and its options
-  (`var WithBearer = themoviedb.WithBearer`) there, so no consumer imports
-  the client and the client can be swapped behind it.
+- The root package is the only thing consumers import. It defines its own
+  result types (`Movie`, `Show`, `Episode`) with only the fields consumers
+  read, and aliases the client's options (`var WithBearer =
+  themoviedb.WithBearer`), so no consumer imports the client.
 - Expose the calls consumers actually make, named for what they answer
   (`Movie`, `Find`, `Poster`), not one wrapper per endpoint. Start from a
   consumer's real usage and add calls as the next consumer needs them.
@@ -20,11 +20,15 @@ of a `go-api-libs` client.
 ## Schema
 
 - One table per resource, keyed by the endpoint's path parameters
-  (`movies(id)`, `seasons(show_id, season_number)`), holding the client's
-  type as a JSON `BLOB` and a `fetched_at`. Do not mirror the API's fields in
-  columns: the client's type already does, and a migration per API change is
-  cost with no reader.
-- Add a typed column only when a query needs to filter or sort on it.
+  (`movies(id)`, `seasons(show_id, season_number)`), with a typed column for
+  each field a consumer reads and a `fetched_at`. No JSON blobs, and no
+  columns for fields nobody reads: list the fields from the consumer's code
+  (`grep` its uses of the client's types) before writing the migration.
+- Store an API's empty date as NULL (`*civil.Date` from sqlc), not a zero
+  date, and map it back to the zero value at the boundary.
+- A nested list the API returns whole (a season's episodes) gets a child
+  table written in the same transaction as its parent, so the parent's row
+  means "all children are kept" and a missing child is a real not-found.
 - One table per search endpoint, keyed by the normalised query and every
   parameter that changes the answer (`UNIQUE (query, year)`), plus a results
   table of `(search_id, rank, resource_id)` referencing the resource table.
@@ -35,7 +39,11 @@ of a `go-api-libs` client.
 ## Code
 
 - One generic helper does read, else fetch, then write (`kept` in
-  `moviedata.go`); each call supplies the three functions. Search calls
+  `moviedata.go`); each call supplies the three functions. Per resource, write
+  three small mappers: from the API type, from the database row, and to the
+  insert parameters.
+- Use `sqlc.embed(table)` in a join so a search's results scan into the
+  table's own model. Search calls
   follow one fixed pattern: look up the search, else fetch, then write search
   and resources in `WithTx`.
 - Normalise queries before keying them (trim, lower-case) and send the

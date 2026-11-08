@@ -3,38 +3,78 @@ package moviedata
 import (
 	"context"
 	"database/sql"
-	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"io/fs"
 
+	"cloud.google.com/go/civil"
 	"github.com/MarkRosemaker/moviedata/databases/data"
 	"github.com/go-api-libs/themoviedb/pkg/themoviedb"
 )
 
+// MovieID is a film's id at The Movie Database.
+type MovieID int32
+
+// Movie is a film, as The Movie Database has it.
+type Movie struct {
+	ID               MovieID
+	Title            string
+	OriginalTitle    string
+	OriginalLanguage string
+	Overview         string
+	ReleaseDate      civil.Date // zero where unknown
+	Popularity       float64
+	VoteAverage      float64
+	VoteCount        int
+	PosterPath       string // empty where it has none
+}
+
+func movieFromAPI(m themoviedb.MovieCommon) Movie {
+	return Movie{
+		ID: MovieID(m.ID), Title: m.Title, OriginalTitle: m.OriginalTitle, OriginalLanguage: m.OriginalLanguage,
+		Overview: m.Overview, ReleaseDate: m.ReleaseDate, Popularity: m.Popularity,
+		VoteAverage: m.VoteAverage, VoteCount: m.VoteCount, PosterPath: m.PosterPath,
+	}
+}
+
+func movieFromRow(r data.Movie) Movie {
+	return Movie{
+		ID: MovieID(r.ID), Title: r.Title, OriginalTitle: r.OriginalTitle, OriginalLanguage: r.OriginalLanguage,
+		Overview: r.Overview, ReleaseDate: dateOf(r.ReleaseDate), Popularity: r.Popularity,
+		VoteAverage: r.VoteAverage, VoteCount: int(r.VoteCount), PosterPath: r.PosterPath,
+	}
+}
+
+func putMovie(ctx context.Context, q *data.Queries, m Movie) error {
+	return q.PutMovie(ctx, data.PutMovieParams{
+		ID: int64(m.ID), Title: m.Title, OriginalTitle: m.OriginalTitle, OriginalLanguage: m.OriginalLanguage,
+		Overview: m.Overview, ReleaseDate: nullDate(m.ReleaseDate), Popularity: m.Popularity,
+		VoteAverage: m.VoteAverage, VoteCount: int64(m.VoteCount), PosterPath: m.PosterPath,
+	})
+}
+
 // Movie is film id.
 func (c *Client) Movie(ctx context.Context, id MovieID) (Movie, error) {
 	return kept(
-		func() ([]byte, error) { return c.db.GetMovie(ctx, int64(id)) },
+		func() (Movie, error) {
+			r, err := c.db.GetMovie(ctx, int64(id))
+
+			return movieFromRow(r), err
+		},
 		func() (Movie, error) {
 			cli, err := c.client()
 			if err != nil {
 				return Movie{}, err
 			}
 
-			d, err := cli.GetMovie(ctx, id, nil)
+			d, err := cli.GetMovie(ctx, themoviedb.MovieID(id), nil)
 			if err != nil {
 				return Movie{}, fmt.Errorf("getting film %d: %w", id, notFound(err))
 			}
 
-			m := Movie{MovieCommon: d.MovieCommon}
-			for _, g := range d.Genres {
-				m.GenreIDs = append(m.GenreIDs, g.ID)
-			}
-
-			return m, nil
+			return movieFromAPI(d.MovieCommon), nil
 		},
-		func(b []byte) error { return c.db.PutMovie(ctx, data.PutMovieParams{ID: int64(id), Data: b}) },
+		func(m Movie) error { return putMovie(ctx, c.db.Queries, m) },
 	)
 }
 
@@ -89,7 +129,12 @@ func (c *Client) searchMovies(ctx context.Context, query string, year int) ([]Mo
 			return nil, err
 		}
 
-		return decodeAll[Movie](rows)
+		out := make([]Movie, len(rows))
+		for i, r := range rows {
+			out[i] = movieFromRow(r.Movie)
+		}
+
+		return out, nil
 	}
 
 	if !errors.Is(err, sql.ErrNoRows) {
@@ -106,7 +151,12 @@ func (c *Client) searchMovies(ctx context.Context, query string, year int) ([]Mo
 		return nil, fmt.Errorf("searching for the film %q: %w", query, err)
 	}
 
-	return res.Results, c.db.WithTx(ctx, func(tx *data.Queries) error {
+	out := make([]Movie, len(res.Results))
+	for i, m := range res.Results {
+		out[i] = movieFromAPI(m.MovieCommon)
+	}
+
+	return out, c.db.WithTx(ctx, func(tx *data.Queries) error {
 		id, err := tx.PutMovieSearch(ctx, data.PutMovieSearchParams(key))
 		if err != nil {
 			return err
@@ -116,13 +166,8 @@ func (c *Client) searchMovies(ctx context.Context, query string, year int) ([]Mo
 			return err
 		}
 
-		for rank, m := range res.Results {
-			b, err := json.Marshal(m)
-			if err != nil {
-				return err
-			}
-
-			if err := tx.PutMovie(ctx, data.PutMovieParams{ID: int64(m.ID), Data: b}); err != nil {
+		for rank, m := range out {
+			if err := putMovie(ctx, tx, m); err != nil {
 				return err
 			}
 

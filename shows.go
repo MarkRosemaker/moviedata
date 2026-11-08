@@ -3,80 +3,160 @@ package moviedata
 import (
 	"context"
 	"database/sql"
-	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"io/fs"
 
+	"cloud.google.com/go/civil"
 	"github.com/MarkRosemaker/moviedata/databases/data"
 	"github.com/go-api-libs/themoviedb/pkg/themoviedb"
 )
 
+// ShowID is a show's id at The Movie Database.
+type ShowID int32
+
+// Show is a show, as The Movie Database has it.
+type Show struct {
+	ID               ShowID
+	Name             string
+	OriginalName     string
+	OriginalLanguage string
+	Overview         string
+	FirstAirDate     civil.Date // zero where unknown
+	Popularity       float64
+	VoteAverage      float64
+	VoteCount        int
+	PosterPath       string // empty where it has none
+}
+
+func showFromAPI(s themoviedb.ShowBase) Show {
+	return Show{
+		ID: ShowID(s.ID), Name: s.Name, OriginalName: s.OriginalName, OriginalLanguage: s.OriginalLanguage,
+		Overview: s.Overview, FirstAirDate: s.FirstAirDate, Popularity: s.Popularity,
+		VoteAverage: s.VoteAverage, VoteCount: s.VoteCount, PosterPath: s.PosterPath,
+	}
+}
+
+func showFromRow(r data.Show) Show {
+	return Show{
+		ID: ShowID(r.ID), Name: r.Name, OriginalName: r.OriginalName, OriginalLanguage: r.OriginalLanguage,
+		Overview: r.Overview, FirstAirDate: dateOf(r.FirstAirDate), Popularity: r.Popularity,
+		VoteAverage: r.VoteAverage, VoteCount: int(r.VoteCount), PosterPath: r.PosterPath,
+	}
+}
+
+func putShow(ctx context.Context, q *data.Queries, s Show) error {
+	return q.PutShow(ctx, data.PutShowParams{
+		ID: int64(s.ID), Name: s.Name, OriginalName: s.OriginalName, OriginalLanguage: s.OriginalLanguage,
+		Overview: s.Overview, FirstAirDate: nullDate(s.FirstAirDate), Popularity: s.Popularity,
+		VoteAverage: s.VoteAverage, VoteCount: int64(s.VoteCount), PosterPath: s.PosterPath,
+	})
+}
+
+// Episode is an episode of a show, as The Movie Database has it.
+type Episode struct {
+	ShowID        ShowID
+	SeasonNumber  int32
+	EpisodeNumber int32
+	Name          string
+	Overview      string
+	AirDate       civil.Date // zero where unknown
+	Runtime       int        // minutes
+	VoteAverage   float64
+	StillPath     string // empty where it has none
+}
+
+func episodeFromRow(r data.Episode) Episode {
+	return Episode{
+		ShowID: ShowID(r.ShowID), SeasonNumber: int32(r.SeasonNumber), EpisodeNumber: int32(r.EpisodeNumber),
+		Name: r.Name, Overview: r.Overview, AirDate: dateOf(r.AirDate), Runtime: int(r.Runtime),
+		VoteAverage: r.VoteAverage, StillPath: r.StillPath,
+	}
+}
+
 // Show is show id.
 func (c *Client) Show(ctx context.Context, id ShowID) (Show, error) {
 	return kept(
-		func() ([]byte, error) { return c.db.GetShow(ctx, int64(id)) },
+		func() (Show, error) {
+			r, err := c.db.GetShow(ctx, int64(id))
+
+			return showFromRow(r), err
+		},
 		func() (Show, error) {
 			cli, err := c.client()
 			if err != nil {
 				return Show{}, err
 			}
 
-			d, err := cli.GetShow(ctx, id, nil)
+			d, err := cli.GetShow(ctx, themoviedb.ShowID(id), nil)
 			if err != nil {
 				return Show{}, fmt.Errorf("getting show %d: %w", id, notFound(err))
 			}
 
-			sh := Show{ShowBase: d.ShowBase}
-			for _, g := range d.Genres {
-				sh.GenreIDs = append(sh.GenreIDs, g.ID)
-			}
-
-			return sh, nil
+			return showFromAPI(d.ShowBase), nil
 		},
-		func(b []byte) error { return c.db.PutShow(ctx, data.PutShowParams{ID: int64(id), Data: b}) },
+		func(s Show) error { return putShow(ctx, c.db.Queries, s) },
 	)
 }
 
-// Season is season n of show id, with its episodes.
-func (c *Client) Season(ctx context.Context, id ShowID, n int32) (Season, error) {
-	key := data.GetSeasonParams{ShowID: int64(id), SeasonNumber: int64(n)}
-
+// seasonPoster is the poster path of season n of show id, fetching the season
+// and its episodes where it is not kept yet.
+func (c *Client) seasonPoster(ctx context.Context, id ShowID, n int32) (string, error) {
 	return kept(
-		func() ([]byte, error) { return c.db.GetSeason(ctx, key) },
-		func() (Season, error) {
+		func() (string, error) {
+			return c.db.GetSeasonPoster(ctx, data.GetSeasonPosterParams{ShowID: int64(id), SeasonNumber: int64(n)})
+		},
+		func() (string, error) {
 			cli, err := c.client()
 			if err != nil {
-				return Season{}, err
+				return "", err
 			}
 
-			d, err := cli.GetShowSeason(ctx, id, n, nil)
+			d, err := cli.GetShowSeason(ctx, themoviedb.ShowID(id), n, nil)
 			if err != nil {
-				return Season{}, fmt.Errorf("getting season %d of show %d: %w", n, id, notFound(err))
+				return "", fmt.Errorf("getting season %d of show %d: %w", n, id, notFound(err))
 			}
 
-			return *d, nil
+			return d.PosterPath, c.db.WithTx(ctx, func(tx *data.Queries) error {
+				if err := tx.PutSeason(ctx, data.PutSeasonParams{
+					ShowID: int64(id), SeasonNumber: int64(n), PosterPath: d.PosterPath,
+				}); err != nil {
+					return err
+				}
+
+				if err := tx.ClearEpisodes(ctx, data.ClearEpisodesParams{ShowID: int64(id), SeasonNumber: int64(n)}); err != nil {
+					return err
+				}
+
+				for _, ep := range d.Episodes {
+					if err := tx.PutEpisode(ctx, data.PutEpisodeParams{
+						ShowID: int64(id), SeasonNumber: int64(n), EpisodeNumber: int64(ep.EpisodeNumber),
+						Name: ep.Name, Overview: ep.Overview, AirDate: nullDate(ep.AirDate),
+						Runtime: int64(ep.Runtime), VoteAverage: ep.VoteAverage, StillPath: ep.StillPath,
+					}); err != nil {
+						return err
+					}
+				}
+
+				return nil
+			})
 		},
-		func(b []byte) error {
-			return c.db.PutSeason(ctx, data.PutSeasonParams{ShowID: key.ShowID, SeasonNumber: key.SeasonNumber, Data: b})
-		},
+		func(string) error { return nil },
 	)
 }
 
 // Episode is episode e of season n of show id.
 func (c *Client) Episode(ctx context.Context, id ShowID, n, e int32) (Episode, error) {
-	se, err := c.Season(ctx, id, n)
-	if err != nil {
+	if _, err := c.seasonPoster(ctx, id, n); err != nil {
 		return Episode{}, err
 	}
 
-	for _, ep := range se.Episodes {
-		if ep.EpisodeNumber == e {
-			return ep, nil
-		}
+	r, err := c.db.GetEpisode(ctx, data.GetEpisodeParams{ShowID: int64(id), SeasonNumber: int64(n), EpisodeNumber: int64(e)})
+	if errors.Is(err, sql.ErrNoRows) {
+		return Episode{}, fmt.Errorf("episode %d of season %d of show %d: %w", e, n, id, fs.ErrNotExist)
 	}
 
-	return Episode{}, fmt.Errorf("episode %d of season %d of show %d: %w", e, n, id, fs.ErrNotExist)
+	return episodeFromRow(r), err
 }
 
 // SearchShows is the shows for query, best first.
@@ -90,7 +170,12 @@ func (c *Client) SearchShows(ctx context.Context, query string) ([]Show, error) 
 			return nil, err
 		}
 
-		return decodeAll[Show](rows)
+		out := make([]Show, len(rows))
+		for i, r := range rows {
+			out[i] = showFromRow(r.Show)
+		}
+
+		return out, nil
 	}
 
 	if !errors.Is(err, sql.ErrNoRows) {
@@ -107,7 +192,12 @@ func (c *Client) SearchShows(ctx context.Context, query string) ([]Show, error) 
 		return nil, fmt.Errorf("searching for the show %q: %w", query, err)
 	}
 
-	return res.Results, c.db.WithTx(ctx, func(tx *data.Queries) error {
+	out := make([]Show, len(res.Results))
+	for i, s := range res.Results {
+		out[i] = showFromAPI(s.ShowBase)
+	}
+
+	return out, c.db.WithTx(ctx, func(tx *data.Queries) error {
 		id, err := tx.PutShowSearch(ctx, q)
 		if err != nil {
 			return err
@@ -117,18 +207,13 @@ func (c *Client) SearchShows(ctx context.Context, query string) ([]Show, error) 
 			return err
 		}
 
-		for rank, sh := range res.Results {
-			b, err := json.Marshal(sh)
-			if err != nil {
-				return err
-			}
-
-			if err := tx.PutShow(ctx, data.PutShowParams{ID: int64(sh.ID), Data: b}); err != nil {
+		for rank, s := range out {
+			if err := putShow(ctx, tx, s); err != nil {
 				return err
 			}
 
 			if err := tx.AddShowSearchResult(ctx, data.AddShowSearchResultParams{
-				SearchID: id, Rank: int64(rank), ShowID: int64(sh.ID),
+				SearchID: id, Rank: int64(rank), ShowID: int64(s.ID),
 			}); err != nil {
 				return err
 			}
@@ -152,8 +237,8 @@ func (c *Client) FindShow(ctx context.Context, name string) (Show, bool, error) 
 // the show's, for n 0 or a season without one.
 func (c *Client) ShowPoster(ctx context.Context, id ShowID, n int32) (string, error) {
 	if n > 0 {
-		if se, err := c.Season(ctx, id, n); err == nil && se.PosterPath != "" {
-			return c.image(ctx, se.PosterPath)
+		if p, err := c.seasonPoster(ctx, id, n); err == nil && p != "" {
+			return c.image(ctx, p)
 		}
 	}
 
