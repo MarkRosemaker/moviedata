@@ -1,9 +1,21 @@
 # cloud.google.com/go v0.123.0
 ## explicit; go 1.24.0
 cloud.google.com/go/civil
+# github.com/MarkRosemaker/cassette v0.0.0-20261107140533-379563b433f3
+## explicit; go 1.27
+github.com/MarkRosemaker/cassette
+# github.com/MarkRosemaker/jsonutil v0.0.0-20261107140449-c48d15773b62
+## explicit; go 1.27
+github.com/MarkRosemaker/jsonutil
 # github.com/dustin/go-humanize v1.1.0
 ## explicit; go 1.21
 github.com/dustin/go-humanize
+# github.com/go-api-libs/api v0.0.0-20261107140449-14441b657cf3
+## explicit; go 1.27
+github.com/go-api-libs/api
+# github.com/go-api-libs/themoviedb v0.0.0-20261107141119-6800efe42e82
+## explicit; go 1.27.3
+github.com/go-api-libs/themoviedb/pkg/themoviedb
 # github.com/google/uuid v1.6.0
 ## explicit
 github.com/google/uuid
