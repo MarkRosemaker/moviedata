@@ -2,7 +2,10 @@ module github.com/MarkRosemaker/moviedata
 
 go 1.27.3
 
-require modernc.org/sqlite v1.62.0
+require (
+	cloud.google.com/go v0.123.0
+	modernc.org/sqlite v1.62.0
+)
 
 require (
 	github.com/dustin/go-humanize v1.1.0 // indirect

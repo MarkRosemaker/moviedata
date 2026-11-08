@@ -103,8 +103,11 @@ opens a real one of its own, rather than mocking it:
 `Open(ctx, filepath.Join(t.TempDir(), "<name>.db"))`.
 
 To add a database, add `{"name": "…", "type": "sqlite"}` (or `"postgres"`)
-to `resources.databases` in `devtool.json`, write
-`databases/<name>/migrations/001_initial.up.sql`, and run `make generate`.
+to `resources.databases` in `devtool.json` and run `make generate`. devtool
+adds the driver to `go.mod`, and writes a first migration and queries for a
+`notes` table, which say they are an example: replace both with the
+database's own before anything relies on it. Its columns are the types that
+map cleanly to Go, each commented with its Go type: keep to those.
 
 ## Keeping the documents true
 

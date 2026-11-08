@@ -1,3 +1,6 @@
+# cloud.google.com/go v0.123.0
+## explicit; go 1.24.0
+cloud.google.com/go/civil
 # github.com/dustin/go-humanize v1.1.0
 ## explicit; go 1.21
 github.com/dustin/go-humanize

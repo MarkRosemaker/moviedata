@@ -5,10 +5,20 @@
 package data
 
 import (
+	"database/sql"
 	"time"
+
+	"cloud.google.com/go/civil"
 )
 
-type Foo struct {
-	ID        int64
-	CreatedAt time.Time
+type Note struct {
+	ID         int64
+	Title      string
+	Body       sql.NullString
+	Pinned     bool
+	Score      sql.NullFloat64
+	Due        *civil.Date
+	RemindAt   sql.NullTime
+	Attachment []byte
+	CreatedAt  time.Time
 }
