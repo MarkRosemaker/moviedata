@@ -21,12 +21,9 @@ import (
 	"github.com/go-api-libs/themoviedb/pkg/themoviedb"
 )
 
-// ClientOption configures the client that fetches what is not kept yet.
-type ClientOption = themoviedb.ClientOption
-
-// WithDebugFile adds the responses the client cannot decode to the file at
-// path, for the client to learn from.
-func WithDebugFile(path string) ClientOption { return themoviedb.WithDebugFile(path) }
+// DebugFile is where the responses the client cannot decode are added, for it
+// to learn from, relative to the working directory.
+const DebugFile = "debug/themoviedb.json"
 
 // Client answers from what it keeps, and fetches from The Movie Database what
 // it does not keep yet.
@@ -50,7 +47,11 @@ func Path() (string, error) { return data.Path() }
 //
 // Without TMDB_API_TOKEN set it still opens:
 // what is kept is answered, and fetching what is not fails.
-func Open(ctx context.Context, path string, opts ...ClientOption) (*Client, error) {
+func Open(ctx context.Context, path string) (*Client, error) {
+	return open(ctx, path, themoviedb.WithDebugFile(DebugFile))
+}
+
+func open(ctx context.Context, path string, opts ...themoviedb.ClientOption) (*Client, error) {
 	db, err := data.Open(ctx, path)
 	if err != nil {
 		return nil, err

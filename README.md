@@ -12,8 +12,8 @@ downloaded once into the `images` directory beside the database. After that,
 the answer comes from there, offline and without a token.
 
 A program uses this package, never `themoviedb` directly: `Movie`, `Show` and
-`Episode` are this package's own, and `WithDebugFile` is the one client option
-passed through.
+`Episode` are this package's own, and it takes no client options: responses
+the client cannot decode go to `debug/themoviedb.json`.
 
 ```go
 path, _ := moviedata.Path() // ~/.moviedata/data.db

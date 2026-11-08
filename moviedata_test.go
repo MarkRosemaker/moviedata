@@ -70,10 +70,10 @@ func (f *fake) RoundTrip(r *http.Request) (*http.Response, error) {
 	}, nil
 }
 
-func open(t *testing.T, path string, opts ...ClientOption) *Client {
+func openTest(t *testing.T, path string, opts ...themoviedb.ClientOption) *Client {
 	t.Helper()
 
-	c, err := Open(t.Context(), path, opts...)
+	c, err := open(t.Context(), path, opts...)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,8 +83,8 @@ func open(t *testing.T, path string, opts ...ClientOption) *Client {
 	return c
 }
 
-func withFake(f *fake) []ClientOption {
-	return []ClientOption{themoviedb.WithBearer("test"), themoviedb.WithHTTPClient(&http.Client{Transport: f})}
+func withFake(f *fake) []themoviedb.ClientOption {
+	return []themoviedb.ClientOption{themoviedb.WithBearer("test"), themoviedb.WithHTTPClient(&http.Client{Transport: f})}
 }
 
 // A film found is kept, so its details, its search and its poster are answered
@@ -93,7 +93,7 @@ func TestMovies(t *testing.T) {
 	ctx := t.Context()
 	f := &fake{}
 	path := filepath.Join(t.TempDir(), "data.db")
-	c := open(t, path, withFake(f)...)
+	c := openTest(t, path, withFake(f)...)
 
 	// No film of that title in 2003 by this fake's say, so the title alone is searched too.
 	for range 2 {
@@ -162,7 +162,7 @@ func TestMovies(t *testing.T) {
 
 	t.Setenv("TMDB_API_TOKEN", "")
 
-	offline := open(t, path)
+	offline := openTest(t, path)
 
 	if m, ok, err := offline.Find(ctx, "The Lord of the Rings 3 The Return of the King", 2003); err != nil || !ok || m.ID != 122 {
 		t.Errorf("found offline %+v, %v, %v", m, ok, err)
@@ -181,7 +181,7 @@ func TestMovies(t *testing.T) {
 func TestShows(t *testing.T) {
 	ctx := t.Context()
 	f := &fake{}
-	c := open(t, filepath.Join(t.TempDir(), "data.db"), withFake(f)...)
+	c := openTest(t, filepath.Join(t.TempDir(), "data.db"), withFake(f)...)
 
 	for range 2 {
 		sh, ok, err := c.FindShow(ctx, "The Crown")
