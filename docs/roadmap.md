@@ -1,11 +1,5 @@
 # Roadmap
 
-## Migrate private-file-vault
-
-Replace its `internal/tmdb` with this package, and its uses of
-`themoviedb`'s types with `moviedata.Movie`, `Show` and `Episode`. Its kept JSON in
-`~/.private-file-vault/tmdb` is a cache and can be dropped.
-
 ## Refreshing
 
 Nothing kept is fetched again. A film's popularity and votes drift, and a

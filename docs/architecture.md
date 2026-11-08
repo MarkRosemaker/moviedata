@@ -33,8 +33,8 @@ The Movie Database's client, keeping the answer before it returns it.
 - A 404 from The Movie Database is wrapped as `fs.ErrNotExist`, as is an
   episode a season lacks or a poster a film lacks.
 
-The calls and fields are those `private-file-vault` uses, moved here from its
-`internal/tmdb`.
+The calls and fields are those `private-file-vault` uses: add to them as the
+next consumer needs.
 
 ## Package `databases/data`
 
