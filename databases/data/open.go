@@ -10,7 +10,7 @@ import (
 	"os"
 	"path/filepath"
 
-	_ "modernc.org/sqlite"
+	_ "github.com/ncruces/go-sqlite3/driver"
 )
 
 // options configure every connection:
@@ -54,7 +54,7 @@ func Open(ctx context.Context, path string) (*DB, error) {
 		return nil, fmt.Errorf("creating the directory for %s: %w", path, err)
 	}
 
-	db, err := sql.Open("sqlite", "file:"+path+"?"+options)
+	db, err := sql.Open("sqlite3", "file:"+path+"?"+options)
 	if err != nil {
 		return nil, fmt.Errorf("opening %s: %w", path, err)
 	}
