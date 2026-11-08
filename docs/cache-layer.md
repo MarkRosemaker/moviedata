@@ -69,6 +69,12 @@ of a `go-api-libs` client.
 
 ## Traps
 
+- Use `github.com/ncruces/go-sqlite3`, the driver devtool uses for encrypted
+  databases, for every SQLite database. Like `modernc.org/sqlite` it needs no
+  cgo, but it vendors in about 5 MB rather than 130, and a cache layer that
+  shares a driver with its consumers adds no second copy of SQLite to them.
+  devtool keeps the driver `go.mod` already requires, so require it before
+  `make generate`.
 - `queries/*.sql` must be ASCII (sqlc cuts by bytes, counts by characters).
 - `go mod vendor` after `go get`, or `make generate` fails on an inconsistent
   vendor directory before it reaches sqlc.
