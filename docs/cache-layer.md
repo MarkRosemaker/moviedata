@@ -11,8 +11,8 @@ of a `go-api-libs` client.
   cache.
 - The root package is the only thing consumers import. It defines its own
   result types (`Movie`, `Show`, `Episode`) with only the fields consumers
-  read, and aliases the client's options (`var WithBearer =
-  themoviedb.WithBearer`), so no consumer imports the client.
+  read, and re-exports only the client options a consumer passes (here just
+  `WithDebugFile`), so no consumer imports the client.
 - Expose the calls consumers actually make, named for what they answer
   (`Movie`, `Find`, `Poster`), not one wrapper per endpoint. Start from a
   consumer's real usage and add calls as the next consumer needs them.
@@ -58,7 +58,9 @@ of a `go-api-libs` client.
 ## Tests
 
 - Open a real database in `t.TempDir()`; fake the API with an
-  `http.RoundTripper` passed through `WithHTTPClient`, counting requests.
+  `http.RoundTripper` passed through the client's own `WithHTTPClient`,
+  counting requests. The test is in the package itself, so it can pass the
+  client's options without the package exporting them.
 - Assert each call twice and the request count once: that is the cache's
   contract.
 - Close and reopen without a token to show the answers survive and come from

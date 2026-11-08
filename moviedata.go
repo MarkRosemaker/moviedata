@@ -24,13 +24,9 @@ import (
 // ClientOption configures the client that fetches what is not kept yet.
 type ClientOption = themoviedb.ClientOption
 
-// Options for the client that fetches what is not kept yet.
-var (
-	WithBearer     = themoviedb.WithBearer
-	WithHTTPClient = themoviedb.WithHTTPClient
-	WithBaseURL    = themoviedb.WithBaseURL
-	WithDebugFile  = themoviedb.WithDebugFile
-)
+// WithDebugFile adds the responses the client cannot decode to the file at
+// path, for the client to learn from.
+func WithDebugFile(path string) ClientOption { return themoviedb.WithDebugFile(path) }
 
 // Client answers from what it keeps, and fetches from The Movie Database what
 // it does not keep yet.
@@ -52,7 +48,7 @@ func Path() (string, error) { return data.Path() }
 // Open opens the database at path, creating it where it does not exist, and
 // keeps images in the directory beside it.
 //
-// Without TMDB_API_TOKEN set and no [WithBearer] among opts it still opens:
+// Without TMDB_API_TOKEN set it still opens:
 // what is kept is answered, and fetching what is not fails.
 func Open(ctx context.Context, path string, opts ...ClientOption) (*Client, error) {
 	db, err := data.Open(ctx, path)

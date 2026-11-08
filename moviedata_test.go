@@ -1,4 +1,4 @@
-package moviedata_test
+package moviedata
 
 import (
 	"errors"
@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/MarkRosemaker/moviedata"
+	"github.com/go-api-libs/themoviedb/pkg/themoviedb"
 )
 
 // fake answers as The Movie Database would, and counts what it is asked.
@@ -70,10 +70,10 @@ func (f *fake) RoundTrip(r *http.Request) (*http.Response, error) {
 	}, nil
 }
 
-func open(t *testing.T, path string, opts ...moviedata.ClientOption) *moviedata.Client {
+func open(t *testing.T, path string, opts ...ClientOption) *Client {
 	t.Helper()
 
-	c, err := moviedata.Open(t.Context(), path, opts...)
+	c, err := Open(t.Context(), path, opts...)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,8 +83,8 @@ func open(t *testing.T, path string, opts ...moviedata.ClientOption) *moviedata.
 	return c
 }
 
-func withFake(f *fake) []moviedata.ClientOption {
-	return []moviedata.ClientOption{moviedata.WithBearer("test"), moviedata.WithHTTPClient(&http.Client{Transport: f})}
+func withFake(f *fake) []ClientOption {
+	return []ClientOption{themoviedb.WithBearer("test"), themoviedb.WithHTTPClient(&http.Client{Transport: f})}
 }
 
 // A film found is kept, so its details, its search and its poster are answered
