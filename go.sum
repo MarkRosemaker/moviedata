@@ -4,10 +4,10 @@ github.com/MarkRosemaker/cassette v0.0.0-20261111155207-3bee9a17aeeb h1:uHcLB/K6
 github.com/MarkRosemaker/cassette v0.0.0-20261111155207-3bee9a17aeeb/go.mod h1:8JkO8rCe7/q8Rvf3OmMNkzTBiIzPpDQusd54xiUl91A=
 github.com/MarkRosemaker/jsonutil v0.0.0-20261111155129-3eb35e1f56f9 h1:7YhXWP+wCMe5zp8Q82bo3Qu69ROTPdpExETFtOm97HM=
 github.com/MarkRosemaker/jsonutil v0.0.0-20261111155129-3eb35e1f56f9/go.mod h1:SzjJlgYFlzpbFGvUUoQgfEsWlbai63bvhDPK8J0MNYM=
-github.com/go-api-libs/api v0.0.0-20261112190634-bde25c574d51 h1:JVrl63yl8vSasO3y4K81aIOYjvyuprdZzKJD8PqStnY=
-github.com/go-api-libs/api v0.0.0-20261112190634-bde25c574d51/go.mod h1:nJuMPHY4qEhbWBvTdDFOPK+LC3Uo8RM9kPhIQfzXv4s=
-github.com/go-api-libs/themoviedb v0.0.0-20261112195347-6248f154df2a h1:Q5t8q2I3CAE+AimIILmqaeY9e8ZnR20mnALakbgFJ3g=
-github.com/go-api-libs/themoviedb v0.0.0-20261112195347-6248f154df2a/go.mod h1:fagXQF5H+ZDywS9dMJ/XpD/xGg1bnVJhu3Vh6A3yGcw=
+github.com/go-api-libs/api v0.0.0-20261112202218-afda1db7f6c6 h1:e0of6CfU1dbeq82N+Gx54OHo5AWw0JGEEjqut4XcAVg=
+github.com/go-api-libs/api v0.0.0-20261112202218-afda1db7f6c6/go.mod h1:nJuMPHY4qEhbWBvTdDFOPK+LC3Uo8RM9kPhIQfzXv4s=
+github.com/go-api-libs/themoviedb v0.0.0-20261112202451-4232c9d3170a h1:z/NGLM5yI1FvRcDaITUEsUxBnDWLogvnvPB6KW1okXo=
+github.com/go-api-libs/themoviedb v0.0.0-20261112202451-4232c9d3170a/go.mod h1:kPm8DfL+pI0uOOO+2uOaiDGCx9pGI6PfzHadPfhm4pA=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
 github.com/ncruces/go-sqlite3 v0.37.0 h1:Ps3EH70hhznZ+qkWIrTUlbTRlEv3dGTSQ/LOXlJxpaM=
