@@ -5,7 +5,7 @@ go 1.27.3
 require (
 	cloud.google.com/go v0.123.0
 	github.com/go-api-libs/api v0.0.0-20261114134924-e424fc3f3589
-	github.com/go-api-libs/themoviedb v0.0.0-20261114151438-02db6c9fa2de
+	github.com/go-api-libs/themoviedb v0.0.0-20261114170731-8bcbdc8517ad
 	github.com/ncruces/go-sqlite3 v0.37.0
 )
 
