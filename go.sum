@@ -6,8 +6,8 @@ github.com/MarkRosemaker/jsonutil v0.0.0-20261114134758-283d23089a18 h1:P6Q9xlkK
 github.com/MarkRosemaker/jsonutil v0.0.0-20261114134758-283d23089a18/go.mod h1:SzjJlgYFlzpbFGvUUoQgfEsWlbai63bvhDPK8J0MNYM=
 github.com/go-api-libs/api v0.0.0-20261115110221-e8fb0e59f3a9 h1:qKLMqCdMIOLnPsqZOFrNUuASWXQNfmU+QWMii+6ofH8=
 github.com/go-api-libs/api v0.0.0-20261115110221-e8fb0e59f3a9/go.mod h1:rzjWUX+9lLTr+YF9mMw1rvNNDcnYpEHPGl7OA9qj9ZQ=
-github.com/go-api-libs/themoviedb v0.0.0-20261115120809-e833ff114e39 h1:MnqzxKPM/qHqi0YDhMKmbvAh81Ejxt8NpmxbiElnGlQ=
-github.com/go-api-libs/themoviedb v0.0.0-20261115120809-e833ff114e39/go.mod h1:4MlHc8+yt2cYSfycnqrSceXihDdn2cSY8uMORdTBIFU=
+github.com/go-api-libs/themoviedb v0.0.0-20261115134152-8885b3830276 h1:MMPb3ZQCUFoAu80g/UQY3baQeUgCpO6skJ4nJwWYbCA=
+github.com/go-api-libs/themoviedb v0.0.0-20261115134152-8885b3830276/go.mod h1:WE9hhlxgF/fOFkueATQLa3N9hHqPeYT9kVI606t9aaY=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
 github.com/ncruces/go-sqlite3 v0.37.0 h1:Ps3EH70hhznZ+qkWIrTUlbTRlEv3dGTSQ/LOXlJxpaM=
