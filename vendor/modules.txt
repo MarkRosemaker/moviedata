@@ -7,10 +7,10 @@ github.com/MarkRosemaker/cassette
 # github.com/MarkRosemaker/jsonutil v0.0.0-20261114134758-283d23089a18
 ## explicit; go 1.27
 github.com/MarkRosemaker/jsonutil
-# github.com/go-api-libs/api v0.0.0-20261115030148-02c29b673d3a
+# github.com/go-api-libs/api v0.0.0-20261115110221-e8fb0e59f3a9
 ## explicit; go 1.27
 github.com/go-api-libs/api
-# github.com/go-api-libs/themoviedb v0.0.0-20261115050747-ed3fdea22305
+# github.com/go-api-libs/themoviedb v0.0.0-20261115110554-869d77baa6a5
 ## explicit; go 1.27.3
 github.com/go-api-libs/themoviedb/pkg/themoviedb
 # github.com/ncruces/go-sqlite3 v0.37.0
