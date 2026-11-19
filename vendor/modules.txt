@@ -10,7 +10,7 @@ github.com/MarkRosemaker/jsonutil
 # github.com/go-api-libs/api v0.0.0-20261118230644-db74d086d284
 ## explicit; go 1.27
 github.com/go-api-libs/api
-# github.com/go-api-libs/themoviedb v0.0.0-20261118231612-55982bc25790
+# github.com/go-api-libs/themoviedb v0.0.0-20261119171243-9f725a83d372
 ## explicit; go 1.27.3
 github.com/go-api-libs/themoviedb/pkg/themoviedb
 # github.com/ncruces/go-sqlite3 v0.37.0
